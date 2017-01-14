@@ -2,15 +2,26 @@ package info.amsa.slideshow;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.support.v4.graphics.BitmapCompat;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ImageView;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
+
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-    ImageView imageView;
+    private ImageView imageView;
+    private File filesDir;
+    private Random random = new Random();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,21 +29,46 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         imageView = (ImageView) findViewById(R.id.imageView);
 
-        // File imageFile = new File("/storage/emulated/0/Geoff & Eric.jpg");
-        File filesDir = getFilesDir();
-        if (filesDir.exists()) {
-            for (File imageFile : filesDir.listFiles()) {
-                Bitmap bm = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
-
-                imageView.setImageBitmap(bm);
-                try {
-                    Thread.sleep(1500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+        filesDir = getFilesDir();
+        if (!filesDir.exists()) {
+            return;
         }
 
+        new PhotoLoaderTask().execute();
 
+    }
+
+    private class PhotoLoaderTask extends AsyncTask<Void, Void, Bitmap> {
+
+
+        @Override
+        protected Bitmap doInBackground(Void[] params) {
+            List<File> imageFiles = new ArrayList<>();
+            for (File imageFile : filesDir.listFiles()) {
+                if (!imageFile.isFile() || !imageFile.getPath().toLowerCase().endsWith(".jpg")) {
+                    continue;
+                }
+                imageFiles.add(imageFile);
+            }
+
+            int index = Math.abs(random.nextInt()) % imageFiles.size();
+            File imageFile = imageFiles.get(index);
+            Bitmap bm = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+
+            try {
+                Thread.sleep(1500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+
+            return bm;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bm) {
+            imageView.setImageBitmap(bm);
+            new PhotoLoaderTask().execute();
+        }
     }
 }
