@@ -5,16 +5,12 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
     tools:context="info.amsa.slideshow.MainActivity">
-
-
 
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:scaleType="fitXY"
+        android:scaleType="centerCrop"
         app:srcCompat="@android:color/black"
         android:id="@+id/imageView" />
-
 </FrameLayout>

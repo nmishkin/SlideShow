@@ -5,12 +5,16 @@ import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -25,25 +29,26 @@ public class MainActivity extends Activity {
     private ImageView imageView;
     private File filesDir;
     private Random random = new Random();
-    Handler handler = new Handler();
+    private Handler handler = new Handler();
+    private Point displaySize = new Point();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Display display = getWindowManager().getDefaultDisplay();
+        display.getRealSize(displaySize);
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }
-        //if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        //    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
-        //}
 
         imageView = (ImageView) findViewById(R.id.imageView);
         imageView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
         File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        filesDir = new File(picturesDir, "Photo Frame");
+        filesDir = new File(picturesDir, "Slide Show");
         if (!filesDir.exists()) {
             return;
         }
@@ -108,6 +113,12 @@ public class MainActivity extends Activity {
             }
             int index = Math.abs(random.nextInt()) % imageFiles.size();
             File imageFile = imageFiles.get(index);
+            Log.d("SlideShow", imageFile.getPath());
+
+            Bitmap origImage = new BitmapDrawable(getApplicationContext().getResources(), imageFile.getAbsolutePath()).getBitmap();
+            int newHeight = (int) ( origImage.getHeight() * (displaySize.x / (float) origImage.getWidth()) );
+            Bitmap scaled = Bitmap.createScaledBitmap(origImage, displaySize.x, newHeight, true);
+
             Bitmap bm = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
 
             try {
