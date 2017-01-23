@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
-import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
 import android.os.AsyncTask;
 import android.os.Environment;
@@ -19,7 +18,7 @@ import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
-import android.view.Window;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
@@ -35,6 +34,16 @@ import java.util.regex.MatchResult;
 
 public class MainActivity extends Activity {
     private final static String TAG = "SlideShow";
+    private final static Date EPOCH = new Date(0);
+
+    private static class Picture {
+        Picture(File file, Date dateTaken) {
+            this.file = file;
+            this.dateTaken = dateTaken;
+        }
+        File file;
+        Date dateTaken;
+    }
 
     private ImageView imageView;
     private File filesDir;
@@ -45,6 +54,7 @@ public class MainActivity extends Activity {
     private AsyncTask<Void, Void, Bitmap> photoLoaderTask = null;
     private PowerManager powerManager;
     private PowerManager.WakeLock wakeLock;
+    private List<Picture> pictures = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +84,22 @@ public class MainActivity extends Activity {
         filesDir = new File(picturesDir, "Slide Show");
         if (!filesDir.exists()) {
             return;
+        }
+
+        File[] fileList = filesDir.listFiles();
+        if (fileList == null) {
+            Log.e(TAG, "Can't get list of pictures");
+            return;
+        }
+
+        for (File file : fileList) {
+            if (file.isFile() && file.getPath().toLowerCase().endsWith(".jpg")) {
+                pictures.add(new Picture(file, getDateTaken(file)));
+            }
+        }
+
+        if (pictures.isEmpty()) {
+            Log.e(TAG, "No pictures found");
         }
 
         screenOn();
@@ -141,34 +167,19 @@ public class MainActivity extends Activity {
     private class PhotoLoaderTask extends AsyncTask<Void, Void, Bitmap> {
         @Override
         protected Bitmap doInBackground(Void[] params) {
-            List<File> imageFiles = new ArrayList<>();
-            File[] fileList = filesDir.listFiles();
-            if (fileList == null) {
-                return null;
-            }
+            Picture picture;
+            do {
+                int index = Math.abs(random.nextInt()) % pictures.size();
+                picture = pictures.get(index);
+            } while (!oldEnough(picture));
 
-            for (File imageFile : fileList) {
-                if (!imageFile.isFile() || !imageFile.getPath().toLowerCase().endsWith(".jpg") || !oldEnough(imageFile)) {
-                    continue;
-                }
-                imageFiles.add(imageFile);
-            }
+            String picturePath = picture.file.getAbsolutePath();
+            Log.d(TAG, picturePath);
 
-            if (imageFiles.isEmpty()) {
-                return null;
-            }
-            int index = Math.abs(random.nextInt()) % imageFiles.size();
-            File imageFile = imageFiles.get(index);
-            Log.d(TAG, imageFile.getPath());
-
-            Bitmap origImage = new BitmapDrawable(getApplicationContext().getResources(), imageFile.getAbsolutePath()).getBitmap();
-            int newHeight = (int) (origImage.getHeight() * (displaySize.x / (float) origImage.getWidth()));
-            Bitmap scaled = Bitmap.createScaledBitmap(origImage, displaySize.x, newHeight, true);
-
-            Bitmap bm = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+            Bitmap bm = BitmapFactory.decodeFile(picturePath);
 
             try {
-                Thread.sleep(3000);
+                Thread.sleep(250);
             } catch (InterruptedException e) {
                 return null;
             }
@@ -179,6 +190,8 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(Bitmap bm) {
             if (bm != null) {
+                final double viewWidthToBitmapWidthRatio = (double)bm.getWidth() / (double)bm.getWidth();
+                imageView.getLayoutParams().height = (int) (bm.getHeight() * viewWidthToBitmapWidthRatio);
                 imageView.setImageBitmap(bm);
             }
             startPhotoLoader();
@@ -190,25 +203,25 @@ public class MainActivity extends Activity {
         }
     }
 
-    private boolean oldEnough(File imageFile) {
+    private Date getDateTaken(File imageFile) {
         ExifInterface exif;
         try {
             exif = new ExifInterface(imageFile.getAbsolutePath());
         } catch (IOException e) {
             Log.i(TAG, "Exception while getting EXIF time", e);
-            return false;
+            return EPOCH;
         }
 
         String dateString = exif.getAttribute(ExifInterface.TAG_DATETIME);
         if (dateString == null) {
-            return true;
+            return EPOCH;
         }
 
         Scanner scanner = new Scanner(dateString);
         scanner.findInLine("(\\d+):(\\d+):(\\d+) (\\d+):(\\d+):(\\d)");
         MatchResult result = scanner.match();
         if (result.groupCount() != 6) {
-            return true;
+            return EPOCH;
         }
         int year   = Integer.parseInt(result.group(1));
         int month  = Integer.parseInt(result.group(2));
@@ -225,9 +238,14 @@ public class MainActivity extends Activity {
         cal.set(Calendar.MINUTE, minute);
         cal.set(Calendar.SECOND, second);
 
+        return cal.getTime();
+    }
+    private boolean oldEnough(Picture pictureFile) {
         Calendar cutoff = Calendar.getInstance();
         cutoff.add(Calendar.YEAR, -1);
 
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(pictureFile.dateTaken);
         return cal.before(cutoff);
     }
 }
