@@ -196,11 +196,6 @@ public class MainActivity extends Activity {
             }
             startPhotoLoader();
         }
-
-        @Override
-        protected void onCancelled() {
-            int i = 0;
-        }
     }
 
     private Date getDateTaken(File imageFile) {
