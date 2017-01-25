@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.os.AsyncTask;
@@ -30,6 +31,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.MatchResult;
 
 public class MainActivity extends Activity {
@@ -51,7 +53,7 @@ public class MainActivity extends Activity {
     private Handler handler = new Handler();
     private Point displaySize = new Point();
     private boolean screenOn;
-    private AsyncTask<Void, Void, Bitmap> photoLoaderTask = null;
+    private AsyncTask<Boolean, Void, Bitmap> photoLoaderTask = null;
     private PowerManager powerManager;
     private PowerManager.WakeLock wakeLock;
     private List<Picture> pictures = new ArrayList<>();
@@ -80,19 +82,19 @@ public class MainActivity extends Activity {
         imageView = (ImageView) findViewById(R.id.imageView);
         imageView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
-        File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        filesDir = new File(picturesDir, "Slide Show");
+        final File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        final File filesDir = new File(picturesDir, "Slide Show");
         if (!filesDir.exists()) {
             return;
         }
 
-        File[] fileList = filesDir.listFiles();
+        final File[] fileList = filesDir.listFiles();
         if (fileList == null) {
             Log.e(TAG, "Can't get list of pictures");
             return;
         }
 
-        for (File file : fileList) {
+        for (final File file : fileList) {
             if (file.isFile() && file.getPath().toLowerCase().endsWith(".jpg")) {
                 pictures.add(new Picture(file, getDateTaken(file)));
             }
@@ -120,9 +122,9 @@ public class MainActivity extends Activity {
         );
         screenOn = true;
         wakeLock.acquire();
-        startPhotoLoader();
+        startPhotoLoader(false);
 
-        runAtNextHourMinute(21, 39, new Runnable() {
+        runAtNextHourMinute(20, 2, new Runnable() {
             @Override
             public void run() {
                 screenOff();
@@ -130,8 +132,8 @@ public class MainActivity extends Activity {
         });
     }
 
-    private synchronized void startPhotoLoader() {
-        photoLoaderTask = new PhotoLoaderTask().execute();
+    private synchronized void startPhotoLoader(boolean pauseFirst) {
+        photoLoaderTask = new PhotoLoaderTask().execute(pauseFirst);
     }
 
     private synchronized void screenOff() {
@@ -144,7 +146,7 @@ public class MainActivity extends Activity {
         screenOn = false;
         photoLoaderTask.cancel(true);
         photoLoaderTask = null;
-        runAtNextHourMinute(21, 41, new Runnable() {
+        runAtNextHourMinute(20, 4, new Runnable() {
             @Override
             public void run() {
                 screenOn();
@@ -159,47 +161,49 @@ public class MainActivity extends Activity {
         if (cal.before(Calendar.getInstance())) {
             cal.add(Calendar.HOUR_OF_DAY, 24);
         }
-        long intervalToNextSleepTime = cal.getTimeInMillis() - System.currentTimeMillis();
-        long postTime = SystemClock.uptimeMillis() + intervalToNextSleepTime;
+        final long intervalToNextSleepTime = cal.getTimeInMillis() - System.currentTimeMillis();
+        final long postTime = SystemClock.uptimeMillis() + intervalToNextSleepTime;
         handler.postAtTime(runnable, postTime);
     }
 
-    private class PhotoLoaderTask extends AsyncTask<Void, Void, Bitmap> {
+    private class PhotoLoaderTask extends AsyncTask<Boolean, Void, Bitmap> {
         @Override
-        protected Bitmap doInBackground(Void[] params) {
+        protected Bitmap doInBackground(Boolean... params) {
+            assert params.length == 1;
+            final boolean pauseFirst = params[0];
+
+            if (pauseFirst) {
+                try {
+                    Thread.sleep(TimeUnit.DAYS.toMillis(1));
+                } catch (InterruptedException e) {
+                    return null;
+                }
+            }
+
             Picture picture;
             do {
-                int index = Math.abs(random.nextInt()) % pictures.size();
+                final int index = Math.abs(random.nextInt()) % pictures.size();
                 picture = pictures.get(index);
             } while (!oldEnough(picture));
 
-            String picturePath = picture.file.getAbsolutePath();
+            final String picturePath = picture.file.getAbsolutePath();
             Log.d(TAG, picturePath);
 
-            Bitmap bm = BitmapFactory.decodeFile(picturePath);
-
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException e) {
-                return null;
-            }
-
-            return bm;
+            return BitmapFactory.decodeFile(picturePath);
         }
 
         @Override
         protected void onPostExecute(Bitmap bm) {
             if (bm != null) {
-                final double viewWidthToBitmapWidthRatio = (double)bm.getWidth() / (double)bm.getWidth();
-                imageView.getLayoutParams().height = (int) (bm.getHeight() * viewWidthToBitmapWidthRatio);
+                imageView.setBackgroundColor(Color.BLACK);
                 imageView.setImageBitmap(bm);
             }
-            startPhotoLoader();
+            startPhotoLoader(true);
         }
     }
 
     private Date getDateTaken(File imageFile) {
-        ExifInterface exif;
+        final ExifInterface exif;
         try {
             exif = new ExifInterface(imageFile.getAbsolutePath());
         } catch (IOException e) {
@@ -207,25 +211,25 @@ public class MainActivity extends Activity {
             return EPOCH;
         }
 
-        String dateString = exif.getAttribute(ExifInterface.TAG_DATETIME);
+        final String dateString = exif.getAttribute(ExifInterface.TAG_DATETIME);
         if (dateString == null) {
             return EPOCH;
         }
 
-        Scanner scanner = new Scanner(dateString);
+        final Scanner scanner = new Scanner(dateString);
         scanner.findInLine("(\\d+):(\\d+):(\\d+) (\\d+):(\\d+):(\\d)");
-        MatchResult result = scanner.match();
+        final MatchResult result = scanner.match();
         if (result.groupCount() != 6) {
             return EPOCH;
         }
-        int year   = Integer.parseInt(result.group(1));
-        int month  = Integer.parseInt(result.group(2));
-        int day    = Integer.parseInt(result.group(3));
-        int hour   = Integer.parseInt(result.group(4));
-        int minute = Integer.parseInt(result.group(5));
-        int second = Integer.parseInt(result.group(6));
+        final int year   = Integer.parseInt(result.group(1));
+        final int month  = Integer.parseInt(result.group(2));
+        final int day    = Integer.parseInt(result.group(3));
+        final int hour   = Integer.parseInt(result.group(4));
+        final int minute = Integer.parseInt(result.group(5));
+        final int second = Integer.parseInt(result.group(6));
 
-        Calendar cal = Calendar.getInstance();
+        final Calendar cal = Calendar.getInstance();
         cal.set(Calendar.YEAR, year);
         cal.set(Calendar.MONTH, month);
         cal.set(Calendar.DAY_OF_MONTH, day);
@@ -236,10 +240,10 @@ public class MainActivity extends Activity {
         return cal.getTime();
     }
     private boolean oldEnough(Picture pictureFile) {
-        Calendar cutoff = Calendar.getInstance();
+        final Calendar cutoff = Calendar.getInstance();
         cutoff.add(Calendar.YEAR, -1);
 
-        Calendar cal = Calendar.getInstance();
+        final Calendar cal = Calendar.getInstance();
         cal.setTime(pictureFile.dateTaken);
         return cal.before(cutoff);
     }
