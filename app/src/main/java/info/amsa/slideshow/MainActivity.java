@@ -80,7 +80,15 @@ public class MainActivity extends Activity {
         }
 
         imageView = (ImageView) findViewById(R.id.imageView);
-        imageView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        goFullScreen();
+
+        imageView.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                goFullScreen();
+                stopPhotoLoader();
+                startPhotoLoader(false);
+            }
+        });
 
         final File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         final File filesDir = new File(picturesDir, "Slide Show");
@@ -107,6 +115,10 @@ public class MainActivity extends Activity {
         screenOn();
     }
 
+    private void goFullScreen() {
+        imageView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
     }
@@ -124,7 +136,7 @@ public class MainActivity extends Activity {
         wakeLock.acquire();
         startPhotoLoader(false);
 
-        runAtNextHourMinute(20, 2, new Runnable() {
+        runAtNextHourMinute(23, 30, new Runnable() {
             @Override
             public void run() {
                 screenOff();
@@ -136,6 +148,11 @@ public class MainActivity extends Activity {
         photoLoaderTask = new PhotoLoaderTask().execute(pauseFirst);
     }
 
+    private synchronized void stopPhotoLoader() {
+        photoLoaderTask.cancel(true);
+        photoLoaderTask = null;
+    }
+
     private synchronized void screenOff() {
         Log.d(TAG, "Screen off");
         wakeLock.release();
@@ -144,9 +161,8 @@ public class MainActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         );
         screenOn = false;
-        photoLoaderTask.cancel(true);
-        photoLoaderTask = null;
-        runAtNextHourMinute(20, 4, new Runnable() {
+        stopPhotoLoader();
+        runAtNextHourMinute(6, 30, new Runnable() {
             @Override
             public void run() {
                 screenOn();
