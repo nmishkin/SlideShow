@@ -2,6 +2,7 @@ package info.amsa.slideshow;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -15,6 +16,7 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Display;
@@ -37,8 +39,9 @@ import java.util.regex.MatchResult;
 public class MainActivity extends Activity {
     private final static String TAG = "SlideShow";
     private final static Date EPOCH = new Date(0);
+    private PictureHistoryDb dbh;
 
-    private static class Picture {
+    public static class Picture {
         Picture(File file, Date dateTaken) {
             this.file = file;
             this.dateTaken = dateTaken;
@@ -112,6 +115,8 @@ public class MainActivity extends Activity {
             Log.e(TAG, "No pictures found");
         }
 
+        dbh = new PictureHistoryDb(getApplicationContext());
+
         screenOn();
     }
 
@@ -120,7 +125,7 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
     }
 
     private synchronized void screenOn() {
@@ -196,15 +201,18 @@ public class MainActivity extends Activity {
                 }
             }
 
-            Picture picture;
-            do {
+            Picture picture = null;
+            for (int i = 0; i < 50; i++) {
                 final int index = Math.abs(random.nextInt()) % pictures.size();
                 picture = pictures.get(index);
-            } while (!oldEnough(picture));
+                if (!displayedRecently(picture) && oldEnough(picture)) {
+                    break;
+                }
+            }
 
             final String picturePath = picture.file.getAbsolutePath();
             Log.d(TAG, picturePath);
-
+            dbh.insertPicture(picture);
             return BitmapFactory.decodeFile(picturePath);
         }
 
@@ -216,6 +224,11 @@ public class MainActivity extends Activity {
             }
             startPhotoLoader(true);
         }
+    }
+
+    private boolean displayedRecently(Picture picture) {
+        long t = dbh.lookupPicture(picture);
+        return System.currentTimeMillis() - t < TimeUnit.DAYS.toMillis(180);
     }
 
     private Date getDateTaken(File imageFile) {
@@ -255,12 +268,12 @@ public class MainActivity extends Activity {
 
         return cal.getTime();
     }
-    private boolean oldEnough(Picture pictureFile) {
+    private boolean oldEnough(Picture picture) {
         final Calendar cutoff = Calendar.getInstance();
         cutoff.add(Calendar.YEAR, -1);
 
         final Calendar cal = Calendar.getInstance();
-        cal.setTime(pictureFile.dateTaken);
+        cal.setTime(picture.dateTaken);
         return cal.before(cutoff);
     }
 }
