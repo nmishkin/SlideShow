@@ -1,9 +1,12 @@
 package info.amsa.slideshow;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,10 +19,16 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Display;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -36,7 +45,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.MatchResult;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
     private final static String TAG = "SlideShow";
     private final static Date EPOCH = new Date(0);
     private PictureHistoryDb dbh;
@@ -60,11 +69,21 @@ public class MainActivity extends Activity {
     private PowerManager powerManager;
     private PowerManager.WakeLock wakeLock;
     private List<Picture> pictures = new ArrayList<>();
+    private android.support.v7.app.ActionBar actionBar;
+    private SharedPreferences sharedPrefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(myToolbar);
+
+        actionBar = getSupportActionBar();
+
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean fooPref = sharedPrefs.getBoolean("check_box_preference_1", false);
 
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
@@ -87,9 +106,20 @@ public class MainActivity extends Activity {
 
         imageView.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                goFullScreen();
-                stopPhotoLoader();
-                startPhotoLoader(false);
+//                goFullScreen();
+//                stopPhotoLoader();
+//                startPhotoLoader(false);
+            }
+        });
+
+        imageView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
+            public void onSystemUiVisibilityChange(int visibility) {
+                if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                    actionBar.show();
+                } else {
+                    actionBar.hide();
+                }
+
             }
         });
 
@@ -121,7 +151,11 @@ public class MainActivity extends Activity {
     }
 
     private void goFullScreen() {
-        imageView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        imageView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_FULLSCREEN );
+        actionBar.hide();
     }
 
     @Override
@@ -275,5 +309,26 @@ public class MainActivity extends Activity {
         final Calendar cal = Calendar.getInstance();
         cal.setTime(picture.dateTaken);
         return cal.before(cutoff);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        boolean fooPref = sharedPrefs.getBoolean("check_box_preference_1", false);
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.settings:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }
