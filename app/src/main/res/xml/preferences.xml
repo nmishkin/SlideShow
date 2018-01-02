@@ -5,4 +5,7 @@
         android:defaultValue="false"
         android:key="check_box_preference_1"
         android:title="Check box preference" />
+    <info.amsa.slideshow.TimePreference
+        android:key="timePrefA_Key"
+        android:title="Start time"/>
 </PreferenceScreen>
