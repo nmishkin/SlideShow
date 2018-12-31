@@ -26,10 +26,15 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -40,6 +45,7 @@ public class MainActivity extends Activity {
     private final static String TAG = "SlideShow";
     private final static Date EPOCH = new Date(0);
     private PictureHistoryDb dbh;
+    private PrintStream logStream;
 
     public static class Picture {
         Picture(File file, Date dateTaken) {
@@ -64,12 +70,22 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        try {
+            FileOutputStream logFile = getApplicationContext().openFileOutput(TAG + ".log", MODE_APPEND);
+            logStream = new PrintStream(logFile);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Can't open log file", e);
+        }
+
+        logStream.format("%Tc Application starting\n", new Date());
         setContentView(R.layout.activity_main);
 
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
                 PowerManager.FULL_WAKE_LOCK |
-                PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG);
+                PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock" +
+                        "");
 
         Display display = getWindowManager().getDefaultDisplay();
         display.getRealSize(displaySize);
@@ -96,6 +112,7 @@ public class MainActivity extends Activity {
         final File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         final File filesDir = new File(picturesDir, "Slide Show");
         if (!filesDir.exists()) {
+            Log.e(TAG, "Can't find Slide Show picture directory: " + filesDir);
             return;
         }
 
@@ -104,6 +121,7 @@ public class MainActivity extends Activity {
             Log.e(TAG, "Can't get list of pictures");
             return;
         }
+        logStream.format("%Tc %d files found\n", new Date(), fileList.length);
 
         for (final File file : fileList) {
             if (file.isFile() && file.getPath().toLowerCase().endsWith(".jpg")) {
@@ -114,6 +132,7 @@ public class MainActivity extends Activity {
         if (pictures.isEmpty()) {
             Log.e(TAG, "No pictures found");
         }
+        logStream.format("%Tc %d pictures found\n", new Date(), pictures.size());
 
         dbh = new PictureHistoryDb(getApplicationContext());
 
@@ -202,16 +221,21 @@ public class MainActivity extends Activity {
             }
 
             Picture picture = null;
-            for (int i = 0; i < 50; i++) {
+            boolean foundOne = false;
+            for (int i = 0; i < 150; i++) {
                 final int index = Math.abs(random.nextInt()) % pictures.size();
                 picture = pictures.get(index);
                 if (!displayedRecently(picture) && oldEnough(picture)) {
+                    foundOne = true;
                     break;
                 }
             }
+            if (!foundOne) {
+                logStream.format("%Tc Didn't find an acceptable picture, proceeding anyway\n", new Date());
+            }
 
             final String picturePath = picture.file.getAbsolutePath();
-            Log.d(TAG, picturePath);
+            logStream.format("%Tc Showing %s\n", new Date(), picturePath);
             dbh.insertPicture(picture);
             return BitmapFactory.decodeFile(picturePath);
         }
