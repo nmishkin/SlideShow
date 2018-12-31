@@ -3,9 +3,12 @@
 
     <CheckBoxPreference
         android:defaultValue="false"
-        android:key="check_box_preference_1"
-        android:title="Check box preference" />
+        android:key="dev_mode"
+        android:title="Development mode" />
     <info.amsa.slideshow.TimePreference
-        android:key="timePrefA_Key"
-        android:title="Start time"/>
+        android:key="sleep_time"
+        android:title="Sleep time"/>
+    <info.amsa.slideshow.TimePreference
+        android:key="wake_time"
+        android:title="Wake time"/>
 </PreferenceScreen>

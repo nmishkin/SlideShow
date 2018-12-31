@@ -71,6 +71,34 @@ public class MainActivity extends AppCompatActivity {
     private List<Picture> pictures = new ArrayList<>();
     private android.support.v7.app.ActionBar actionBar;
     private SharedPreferences sharedPrefs;
+    private boolean devMode = false;
+    private int sleepHour = 23;
+    private int sleepMinute = 30;
+    private int wakeHour = 6;
+    private int wakeMinute = 30;
+
+    private SharedPreferences.OnSharedPreferenceChangeListener preferenceChangeListener = new PreferenceChangeListener();
+
+    private class PreferenceChangeListener implements SharedPreferences.OnSharedPreferenceChangeListener {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+            switch (key) {
+                case "sleep_time":
+                    String[] sleepTimeStrings = prefs.getString(key, "23:30").split(":");
+                    sleepHour = Integer.decode(sleepTimeStrings[0]);
+                    sleepMinute = Integer.decode(sleepTimeStrings[1]);
+                    break;
+                case "wake_time":
+                    String[] wakeTimeStrings = prefs.getString(key, "6:30").split(":");
+                    wakeHour = Integer.decode(wakeTimeStrings[0]);
+                    wakeMinute = Integer.decode(wakeTimeStrings[1]);
+                    break;
+                case "dev_mode":
+                    devMode = prefs.getBoolean(key, false);
+                    break;
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +111,9 @@ public class MainActivity extends AppCompatActivity {
         actionBar = getSupportActionBar();
 
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean fooPref = sharedPrefs.getBoolean("check_box_preference_1", false);
+        sharedPrefs.registerOnSharedPreferenceChangeListener(preferenceChangeListener);
+
+        boolean fooPref = sharedPrefs.getBoolean("dev_mode", false);
 
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
@@ -106,9 +136,9 @@ public class MainActivity extends AppCompatActivity {
 
         imageView.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-//                goFullScreen();
-//                stopPhotoLoader();
-//                startPhotoLoader(false);
+                goFullScreen();
+                stopPhotoLoader();
+                startPhotoLoader(false);
             }
         });
 
@@ -175,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
         wakeLock.acquire();
         startPhotoLoader(false);
 
-        runAtNextHourMinute(23, 30, new Runnable() {
+        runAtNextHourMinute(sleepHour, sleepMinute, new Runnable() {
             @Override
             public void run() {
                 screenOff();
@@ -201,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
         );
         screenOn = false;
         stopPhotoLoader();
-        runAtNextHourMinute(6, 30, new Runnable() {
+        runAtNextHourMinute(wakeHour, wakeMinute, new Runnable() {
             @Override
             public void run() {
                 screenOn();
@@ -320,7 +350,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        boolean fooPref = sharedPrefs.getBoolean("check_box_preference_1", false);
+        boolean fooPref = sharedPrefs.getBoolean("dev_mode", false);
         // Handle item selection
         switch (item.getItemId()) {
             case R.id.settings:

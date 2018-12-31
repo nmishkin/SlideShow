@@ -1,6 +1,7 @@
 package info.amsa.slideshow;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 public class SettingsActivity extends Activity {
