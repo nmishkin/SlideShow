@@ -2,7 +2,6 @@ package info.amsa.slideshow;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -11,17 +10,16 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
@@ -29,12 +27,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Formatter;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -57,15 +53,12 @@ public class MainActivity extends Activity {
     }
 
     private ImageView imageView;
-    private File filesDir;
-    private Random random = new Random();
-    private Handler handler = new Handler();
-    private Point displaySize = new Point();
-    private boolean screenOn;
+    private final Random random = new Random();
+    private final Handler handler = new Handler();
+    private final Point displaySize = new Point();
     private AsyncTask<Boolean, Void, Bitmap> photoLoaderTask = null;
-    private PowerManager powerManager;
     private PowerManager.WakeLock wakeLock;
-    private List<Picture> pictures = new ArrayList<>();
+    private final List<Picture> pictures = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,7 +74,7 @@ public class MainActivity extends Activity {
         logStream.format("%Tc Application starting\n", new Date());
         setContentView(R.layout.activity_main);
 
-        powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
                 PowerManager.FULL_WAKE_LOCK |
                 PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock" +
@@ -98,7 +91,7 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.WAKE_LOCK}, 0);
         }
 
-        imageView = (ImageView) findViewById(R.id.imageView);
+        imageView = findViewById(R.id.imageView);
         goFullScreen();
 
         imageView.setOnClickListener(new View.OnClickListener() {
@@ -156,16 +149,10 @@ public class MainActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
                 WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
         );
-        screenOn = true;
         wakeLock.acquire();
         startPhotoLoader(false);
 
-        runAtNextHourMinute(23, 30, new Runnable() {
-            @Override
-            public void run() {
-                screenOff();
-            }
-        });
+        runAtNextHourMinute(23, 30, this::screenOff);
     }
 
     private synchronized void startPhotoLoader(boolean pauseFirst) {
@@ -184,14 +171,8 @@ public class MainActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         );
-        screenOn = false;
         stopPhotoLoader();
-        runAtNextHourMinute(6, 30, new Runnable() {
-            @Override
-            public void run() {
-                screenOn();
-            }
-        });
+        runAtNextHourMinute(6, 30, this::screenOn);
     }
 
     private void runAtNextHourMinute(int hour, int minute, Runnable runnable) {
