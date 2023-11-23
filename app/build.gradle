@@ -4,7 +4,7 @@ android {
     compileSdk 32
     defaultConfig {
         applicationId "info.amsa.slideshow"
-        minSdkVersion 23
+        minSdkVersion 32
         targetSdkVersion 32
         versionCode 1
         versionName "1.0"
