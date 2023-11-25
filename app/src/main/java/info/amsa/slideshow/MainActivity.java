@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.os.AsyncTask;
@@ -17,6 +18,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
@@ -53,6 +55,8 @@ public class MainActivity extends Activity {
     }
 
     private ImageView imageView;
+    private int screenWidth;
+    private int screenHeight;
     private final Random random = new Random();
     private final Handler handler = new Handler();
     private final Point displaySize = new Point();
@@ -63,6 +67,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        WindowManager wm = getWindowManager();
+        Display display = wm.getDefaultDisplay();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        display.getMetrics(displayMetrics);
+        screenWidth = displayMetrics.widthPixels;
+        screenHeight = displayMetrics.heightPixels;
 
         try {
             FileOutputStream logFile = getApplicationContext().openFileOutput(TAG + ".log", MODE_APPEND);
@@ -80,7 +91,6 @@ public class MainActivity extends Activity {
                 PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock" +
                         "");
 
-        Display display = getWindowManager().getDefaultDisplay();
         display.getRealSize(displaySize);
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -224,11 +234,26 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(Bitmap bm) {
             if (bm != null) {
+                Bitmap scaledBm = scaleBitmapWithAspectRatio(bm, screenHeight);
+
+               // imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 imageView.setBackgroundColor(Color.BLACK);
-                imageView.setImageBitmap(bm);
+                imageView.setImageBitmap(scaledBm);
             }
             startPhotoLoader(true);
         }
+
+        // Function to scale a Bitmap while preserving aspect ratio and preserving height
+        public Bitmap scaleBitmapWithAspectRatio(Bitmap originalBitmap, int newHeight) {
+            float scaleFactor = (float) newHeight / originalBitmap.getHeight();
+            Matrix matrix = new Matrix();
+            matrix.postScale(scaleFactor, scaleFactor);
+            return Bitmap.createBitmap(
+                    originalBitmap, 0, 0,
+                    originalBitmap.getWidth(), originalBitmap.getHeight(), matrix, true
+            );
+        }
+
     }
 
     private boolean displayedRecently(Picture picture) {
