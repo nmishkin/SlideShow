@@ -40,10 +40,12 @@ class PictureHistoryDb extends SQLiteOpenHelper {
     }
 
     public long lookupPicture(MainActivity.Picture picture) {
-        Cursor cursor = getReadableDatabase().query(TABLE_NAME,
+        try (Cursor cursor = getReadableDatabase().query(TABLE_NAME,
                 new String[]{COL_LAST_DISPLAYED}, COL_PATH_NAME + "= ?",
                 new String[]{picture.file.getName()},
-                null, null, null);
-        return cursor.moveToNext() ? cursor.getLong(0) : 0;
+                null, null, null)) {
+            ;
+            return cursor.moveToNext() ? cursor.getLong(0) : 0;
+        }
     }
 }
