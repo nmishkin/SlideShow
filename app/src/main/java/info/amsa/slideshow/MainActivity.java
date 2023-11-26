@@ -6,7 +6,9 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.os.AsyncTask;
@@ -223,7 +225,35 @@ public class MainActivity extends Activity {
             final String picturePath = picture.file.getAbsolutePath();
             logStream.format("%Tc Showing %s\n", new Date(), picturePath);
             dbh.insertPicture(picture);
-            return BitmapFactory.decodeFile(picturePath);
+
+            Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
+
+            Bitmap bitmapWithText = addTextToBitmap(bitmap, String.valueOf(picture.dateTaken.getYear() + 1900));
+            return bitmapWithText;
+        }
+
+        private Bitmap addTextToBitmap(Bitmap bitmap, String textToAdd) {
+            // Create a mutable copy of the original bitmap
+            Bitmap bitmapWithText = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+
+            // Create a canvas to draw on the bitmap
+            Canvas canvas = new Canvas(bitmapWithText);
+
+            // Create a Paint object for styling the text
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);  // Set the text color
+            paint.setTextSize(20);      // Set the text size
+            paint.setAntiAlias(true);   // Enable anti-aliasing for smoother text
+            paint.setFakeBoldText(true);
+
+            // Calculate the position to center the text on the bitmap
+            float x = bitmapWithText.getWidth() - paint.measureText(textToAdd) - 10;
+            float y = bitmapWithText.getHeight() - paint.getTextSize() + 15;
+
+            // Draw the text on the bitmap
+            canvas.drawText(textToAdd, x, y, paint);
+
+            return bitmapWithText;
         }
 
         @Override
@@ -250,7 +280,7 @@ public class MainActivity extends Activity {
             return EPOCH;
         }
 
-        final String dateString = exif.getAttribute(ExifInterface.TAG_DATETIME);
+        final String dateString = exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
         if (dateString == null) {
             return EPOCH;
         }
