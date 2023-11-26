@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.os.AsyncTask;
@@ -44,7 +43,6 @@ public class MainActivity extends Activity {
     private final static Date EPOCH = new Date(0);
     private PictureHistoryDb dbh;
     private PrintStream logStream;
-    private DisplayMetrics displayMetrics;
 
     public static class Picture {
         Picture(File file, Date dateTaken) {
@@ -56,8 +54,6 @@ public class MainActivity extends Activity {
     }
 
     private ImageView imageView;
-    private int screenWidth;
-    private int screenHeight;
     private final Random random = new Random();
     private final Handler handler = new Handler();
     private final Point displaySize = new Point();
@@ -71,10 +67,8 @@ public class MainActivity extends Activity {
 
         WindowManager wm = getWindowManager();
         Display display = wm.getDefaultDisplay();
-        displayMetrics = new DisplayMetrics();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
         display.getMetrics(displayMetrics);
-        screenWidth = displayMetrics.widthPixels;
-        screenHeight = displayMetrics.heightPixels;
 
         try {
             FileOutputStream logFile = getApplicationContext().openFileOutput(TAG + ".log", MODE_APPEND);
@@ -235,46 +229,10 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(Bitmap bitmap) {
             if (bitmap != null) {
-                Bitmap scaledBitmap = bitmap; //scaleBitmapWithAspectRatio(bitmap, screenHeight);
-                Matrix centeringMatrix = centerBitmap(scaledBitmap);
-            //    imageView.setImageMatrix(centeringMatrix);
-
-                Log.i(TAG, String.format("Orig dims: %d x %d",
-                        bitmap.getScaledWidth(displayMetrics), bitmap.getScaledHeight(displayMetrics)));
-                Log.i(TAG, String.format("Scaled dims: %d x %d",
-                        scaledBitmap.getScaledWidth(displayMetrics), scaledBitmap.getScaledHeight(displayMetrics)));
-
-
-                //imageView.setMaxWidth(screenWidth);
-                //imageView.setMaxHeight(screenHeight);
-
-           //     imageView.setAdjustViewBounds(true);
-           //     imageView.setScaleType(ImageView.ScaleType.MATRIX);
                 imageView.setBackgroundColor(Color.BLACK);
-                imageView.setImageBitmap(scaledBitmap);
+                imageView.setImageBitmap(bitmap);
             }
             startPhotoLoader(true);
-        }
-
-        private Matrix centerBitmap(Bitmap bm) {
-            float translateX = (screenWidth - bm.getWidth()) / 2.0f;
-            float translateY = (screenHeight - bm.getHeight()) / 2.0f;
-
-            Matrix matrix = new Matrix();
-            matrix.postTranslate(translateX, translateY);
-            return matrix;
-        }
-
-        // Function to scale a Bitmap while preserving aspect ratio and preserving height
-        public Bitmap scaleBitmapWithAspectRatio(Bitmap bitmap, int newHeight) {
-            float scaleFactor = (float) newHeight / bitmap.getHeight();
-            Matrix matrix = new Matrix();
-            matrix.postScale(scaleFactor, scaleFactor);
-
-            return Bitmap.createBitmap(
-                    bitmap, 0, 0,
-                    bitmap.getWidth(), bitmap.getHeight(), matrix, true
-            );
         }
     }
 
