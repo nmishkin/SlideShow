@@ -8,10 +8,10 @@
     tools:context="info.amsa.slideshow.MainActivity">
 
     <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="false"
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
         android:scaleType="fitCenter"
-        app:srcCompat="@android:color/black"
-        android:id="@+id/imageView" />
+        app:srcCompat="@android:color/black" />
 </FrameLayout>

@@ -17,6 +17,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
@@ -64,6 +65,11 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        WindowManager wm = getWindowManager();
+        Display display = wm.getDefaultDisplay();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        display.getMetrics(displayMetrics);
+
         try {
             FileOutputStream logFile = getApplicationContext().openFileOutput(TAG + ".log", MODE_APPEND);
             logStream = new PrintStream(logFile);
@@ -80,7 +86,6 @@ public class MainActivity extends Activity {
                 PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock" +
                         "");
 
-        Display display = getWindowManager().getDefaultDisplay();
         display.getRealSize(displaySize);
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -222,10 +227,10 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        protected void onPostExecute(Bitmap bm) {
-            if (bm != null) {
+        protected void onPostExecute(Bitmap bitmap) {
+            if (bitmap != null) {
                 imageView.setBackgroundColor(Color.BLACK);
-                imageView.setImageBitmap(bm);
+                imageView.setImageBitmap(bitmap);
             }
             startPhotoLoader(true);
         }
