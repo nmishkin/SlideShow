@@ -44,6 +44,7 @@ public class MainActivity extends Activity {
     private final static Date EPOCH = new Date(0);
     private PictureHistoryDb dbh;
     private PrintStream logStream;
+    private DisplayMetrics displayMetrics;
 
     public static class Picture {
         Picture(File file, Date dateTaken) {
@@ -70,7 +71,7 @@ public class MainActivity extends Activity {
 
         WindowManager wm = getWindowManager();
         Display display = wm.getDefaultDisplay();
-        DisplayMetrics displayMetrics = new DisplayMetrics();
+        displayMetrics = new DisplayMetrics();
         display.getMetrics(displayMetrics);
         screenWidth = displayMetrics.widthPixels;
         screenHeight = displayMetrics.heightPixels;
@@ -232,28 +233,49 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        protected void onPostExecute(Bitmap bm) {
-            if (bm != null) {
-                Bitmap scaledBm = scaleBitmapWithAspectRatio(bm, screenHeight);
+        protected void onPostExecute(Bitmap bitmap) {
+            if (bitmap != null) {
+                Bitmap scaledBitmap = bitmap; //scaleBitmapWithAspectRatio(bitmap, screenHeight);
+                Matrix centeringMatrix = centerBitmap(scaledBitmap);
+            //    imageView.setImageMatrix(centeringMatrix);
 
-               // imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                Log.i(TAG, String.format("Orig dims: %d x %d",
+                        bitmap.getScaledWidth(displayMetrics), bitmap.getScaledHeight(displayMetrics)));
+                Log.i(TAG, String.format("Scaled dims: %d x %d",
+                        scaledBitmap.getScaledWidth(displayMetrics), scaledBitmap.getScaledHeight(displayMetrics)));
+
+
+                //imageView.setMaxWidth(screenWidth);
+                //imageView.setMaxHeight(screenHeight);
+
+           //     imageView.setAdjustViewBounds(true);
+           //     imageView.setScaleType(ImageView.ScaleType.MATRIX);
                 imageView.setBackgroundColor(Color.BLACK);
-                imageView.setImageBitmap(scaledBm);
+                imageView.setImageBitmap(scaledBitmap);
             }
             startPhotoLoader(true);
         }
 
-        // Function to scale a Bitmap while preserving aspect ratio and preserving height
-        public Bitmap scaleBitmapWithAspectRatio(Bitmap originalBitmap, int newHeight) {
-            float scaleFactor = (float) newHeight / originalBitmap.getHeight();
+        private Matrix centerBitmap(Bitmap bm) {
+            float translateX = (screenWidth - bm.getWidth()) / 2.0f;
+            float translateY = (screenHeight - bm.getHeight()) / 2.0f;
+
             Matrix matrix = new Matrix();
-            matrix.postScale(scaleFactor, scaleFactor);
-            return Bitmap.createBitmap(
-                    originalBitmap, 0, 0,
-                    originalBitmap.getWidth(), originalBitmap.getHeight(), matrix, true
-            );
+            matrix.postTranslate(translateX, translateY);
+            return matrix;
         }
 
+        // Function to scale a Bitmap while preserving aspect ratio and preserving height
+        public Bitmap scaleBitmapWithAspectRatio(Bitmap bitmap, int newHeight) {
+            float scaleFactor = (float) newHeight / bitmap.getHeight();
+            Matrix matrix = new Matrix();
+            matrix.postScale(scaleFactor, scaleFactor);
+
+            return Bitmap.createBitmap(
+                    bitmap, 0, 0,
+                    bitmap.getWidth(), bitmap.getHeight(), matrix, true
+            );
+        }
     }
 
     private boolean displayedRecently(Picture picture) {
