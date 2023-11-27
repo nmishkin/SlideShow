@@ -23,6 +23,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
@@ -140,7 +141,7 @@ public class MainActivity extends Activity {
     }
 
     private void goFullScreen() {
-        imageView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        imageView.getWindowInsetsController().hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
     }
 
     @Override
@@ -150,12 +151,10 @@ public class MainActivity extends Activity {
     private synchronized void screenOn() {
         Log.d(TAG, "Screen on");
         assert photoLoaderTask == null;
-        getWindow().addFlags(
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-        );
+        setTurnScreenOn(true);
+        setShowWhenLocked(true);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         wakeLock.acquire();
         startPhotoLoader(false);
 
