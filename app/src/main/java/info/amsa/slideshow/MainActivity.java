@@ -1,5 +1,7 @@
 package info.amsa.slideshow;
 
+import static java.time.Instant.EPOCH;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
@@ -9,7 +11,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.media.ExifInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -24,34 +25,39 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.exifinterface.media.ExifInterface;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
-import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.MatchResult;
 
 public class MainActivity extends Activity {
     private final static String TAG = "SlideShow";
-    private final static Date EPOCH = new Date(0);
+    public static final ZoneId SYSTEM_TZ = ZoneId.systemDefault();
     private PictureHistoryDb dbh;
     private PrintStream logStream;
 
     public static class Picture {
-        Picture(File file, Date dateTaken) {
+        Picture(File file, Instant dateTaken) {
             this.file = file;
             this.dateTaken = dateTaken;
         }
         File file;
-        Date dateTaken;
+        Instant dateTaken;
     }
 
     private ImageView imageView;
@@ -215,8 +221,8 @@ public class MainActivity extends Activity {
             dbh.insertPicture(picture);
 
             Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
-
-            return addTextToBitmap(bitmap, String.valueOf(picture.dateTaken.getYear() + 1900));
+            ZonedDateTime zonedDateTaken = picture.dateTaken.atZone(SYSTEM_TZ);
+            return addTextToBitmap(bitmap, String.valueOf(zonedDateTaken.getYear()));
         }
 
         private Bitmap addTextToBitmap(Bitmap bitmap, String textToAdd) {
@@ -258,7 +264,7 @@ public class MainActivity extends Activity {
         return System.currentTimeMillis() - t < TimeUnit.DAYS.toMillis(180);
     }
 
-    private Date getDateTaken(File imageFile) {
+    private Instant getDateTaken(File imageFile) {
         final ExifInterface exif;
         try {
             exif = new ExifInterface(imageFile.getAbsolutePath());
@@ -267,40 +273,21 @@ public class MainActivity extends Activity {
             return EPOCH;
         }
 
+
         final String dateString = exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
         if (dateString == null) {
             return EPOCH;
         }
-
-        final Scanner scanner = new Scanner(dateString);
-        scanner.findInLine("(\\d+):(\\d+):(\\d+) (\\d+):(\\d+):(\\d)");
-        final MatchResult result = scanner.match();
-        if (result.groupCount() != 6) {
+        Date date;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+        try {
+            date = dateFormat.parse(dateString);
+        } catch (ParseException e) {
             return EPOCH;
         }
-        final int year   = Integer.parseInt(result.group(1));
-        final int month  = Integer.parseInt(result.group(2));
-        final int day    = Integer.parseInt(result.group(3));
-        final int hour   = Integer.parseInt(result.group(4));
-        final int minute = Integer.parseInt(result.group(5));
-        final int second = Integer.parseInt(result.group(6));
-
-        final Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.YEAR, year);
-        cal.set(Calendar.MONTH, month);
-        cal.set(Calendar.DAY_OF_MONTH, day);
-        cal.set(Calendar.HOUR, hour);
-        cal.set(Calendar.MINUTE, minute);
-        cal.set(Calendar.SECOND, second);
-
-        return cal.getTime();
+        return date.toInstant();
     }
     private boolean oldEnough(Picture picture) {
-        final Calendar cutoff = Calendar.getInstance();
-        cutoff.add(Calendar.YEAR, -1);
-
-        final Calendar cal = Calendar.getInstance();
-        cal.setTime(picture.dateTaken);
-        return cal.before(cutoff);
+        return Duration.between(Instant.now(), picture.dateTaken).toDays() > 365;
     }
 }
