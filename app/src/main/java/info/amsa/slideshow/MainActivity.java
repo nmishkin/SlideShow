@@ -9,7 +9,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.media.ExifInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -17,15 +16,14 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.ImageView;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -59,7 +57,6 @@ public class MainActivity extends Activity {
     private ImageView imageView;
     private final Random random = new Random();
     private final Handler handler = new Handler();
-    private final Point displaySize = new Point();
     private AsyncTask<Boolean, Void, Bitmap> photoLoaderTask = null;
     private PowerManager.WakeLock wakeLock;
     private final List<Picture> pictures = new ArrayList<>();
@@ -67,11 +64,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        WindowManager wm = getWindowManager();
-        Display display = wm.getDefaultDisplay();
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        display.getMetrics(displayMetrics);
 
         try {
             FileOutputStream logFile = getApplicationContext().openFileOutput(TAG + ".log", MODE_APPEND);
@@ -88,9 +80,6 @@ public class MainActivity extends Activity {
                 PowerManager.FULL_WAKE_LOCK |
                 PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock" +
                         "");
-
-        display.getRealSize(displaySize);
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }
@@ -227,8 +216,7 @@ public class MainActivity extends Activity {
 
             Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
 
-            Bitmap bitmapWithText = addTextToBitmap(bitmap, String.valueOf(picture.dateTaken.getYear() + 1900));
-            return bitmapWithText;
+            return addTextToBitmap(bitmap, String.valueOf(picture.dateTaken.getYear() + 1900));
         }
 
         private Bitmap addTextToBitmap(Bitmap bitmap, String textToAdd) {
