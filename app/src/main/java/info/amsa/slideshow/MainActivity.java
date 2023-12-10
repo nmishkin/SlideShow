@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowInsets;
@@ -39,7 +38,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -177,14 +175,10 @@ public class MainActivity extends Activity {
     }
 
     private void runAtNextHourMinute(int hour, int minute, Runnable runnable) {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.HOUR_OF_DAY, hour);
-        cal.set(Calendar.MINUTE, minute);
-        if (cal.before(Calendar.getInstance())) {
-            cal.add(Calendar.HOUR_OF_DAY, 24);
-        }
-        final long intervalToNextSleepTime = cal.getTimeInMillis() - System.currentTimeMillis();
-        final long postTime = SystemClock.uptimeMillis() + intervalToNextSleepTime;
+        final ZonedDateTime now = ZonedDateTime.now(SYSTEM_TZ);
+        final ZonedDateTime targetTime = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0);
+        final ZonedDateTime adjTargetTime = now.isAfter(targetTime) ? targetTime.plusDays(1) : targetTime;
+        final long postTime = adjTargetTime.toInstant().toEpochMilli();
         handler.postAtTime(runnable, postTime);
     }
 
