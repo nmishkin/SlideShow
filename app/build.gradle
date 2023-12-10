@@ -1,13 +1,31 @@
 apply plugin: 'com.android.application'
 
+def getGitHash = {
+    try {
+        def hashOutput = new ByteArrayOutputStream()
+        def gitVersionName
+        exec {
+            commandLine 'git', 'rev-list', '--max-count=1', 'HEAD'
+            standardOutput = hashOutput
+        }
+        gitVersionName = hashOutput.toString().trim().substring(0, 7);
+        return gitVersionName
+    } catch (ignored) {
+        return "UNKNOWN";
+    }
+}
+
+def MAJOR_VERSION = 0
+def MINOR_VERSION = 3
+
 android {
     compileSdk 32
     defaultConfig {
         applicationId "info.amsa.slideshow"
         minSdkVersion 32
         targetSdkVersion 32
-        versionCode 1
-        versionName "1.0"
+        versionCode MAJOR_VERSION * 100 + MINOR_VERSION
+        versionName "" + MAJOR_VERSION + "." + MINOR_VERSION + "." + getGitHash()
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     buildTypes {
