@@ -32,14 +32,14 @@ class PictureHistoryDb extends SQLiteOpenHelper {
 
     }
 
-    void insertPicture(MainActivity.Picture picture) {
+    void insertPicture(MainFragment.Picture picture) {
         ContentValues values = new ContentValues();
         values.put(COL_PATH_NAME, picture.file.getName());
         values.put(COL_LAST_DISPLAYED, System.currentTimeMillis());
         getWritableDatabase().insert(TABLE_NAME, null, values);
     }
 
-    public long lookupPicture(MainActivity.Picture picture) {
+    public long lookupPicture(MainFragment.Picture picture) {
         try (Cursor cursor = getReadableDatabase().query(TABLE_NAME,
                 new String[]{COL_LAST_DISPLAYED}, COL_PATH_NAME + "= ?",
                 new String[]{picture.file.getName()},
