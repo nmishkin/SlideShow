@@ -103,12 +103,10 @@ public class MainFragment extends Fragment {
         imageView = view.findViewById(R.id.imageView);
         goFullScreen();
 
-        imageView.setOnClickListener(new View.OnClickListener() {
-            public void onClick(final View v) {
-                goFullScreen();
-                stopPhotoLoader();
-                startPhotoLoader(false);
-            }
+        imageView.setOnClickListener(v -> {
+            goFullScreen();
+            stopPhotoLoader();
+            startPhotoLoader(false);
         });
 
         final File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
