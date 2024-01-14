@@ -1,18 +1,9 @@
 package info.amsa.slideshow;
 
-import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import static android.content.Context.MODE_APPEND;
 import static java.time.Instant.EPOCH;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -24,14 +15,14 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowManager;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.fragment.app.Fragment;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -50,16 +41,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static android.content.Context.MODE_APPEND;
-
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link MainFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class MainFragment extends Fragment {
-    private final static String TAG = "SlideShow";
-    public static final ZoneId SYSTEM_TZ = ZoneId.systemDefault();
+    private static final String TAG = "SlideShow";
+    private static final ZoneId SYSTEM_TZ = ZoneId.systemDefault();
     private PictureHistoryDb dbh;
     private PrintStream logStream;
 
@@ -78,44 +62,14 @@ public class MainFragment extends Fragment {
     private AsyncTask<Boolean, Void, Bitmap> photoLoaderTask = null;
     private PowerManager.WakeLock wakeLock;
     private final List<Picture> pictures = new ArrayList<>();
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
 
     public MainFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment MainFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static MainFragment newInstance(String param1, String param2) {
-        MainFragment fragment = new MainFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
@@ -137,8 +91,7 @@ public class MainFragment extends Fragment {
         PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
                 PowerManager.FULL_WAKE_LOCK |
-                        PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock" +
-                        "");
+                        PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock");
 
         imageView = view.findViewById(R.id.imageView);
         goFullScreen();
