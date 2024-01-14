@@ -40,10 +40,13 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MainFragment extends Fragment {
     private static final String TAG = "SlideShow";
@@ -65,7 +68,7 @@ public class MainFragment extends Fragment {
     private final Handler handler = new Handler();
     private AsyncTask<Boolean, Void, Bitmap> photoLoaderTask = null;
     private PowerManager.WakeLock wakeLock;
-    private final List<Picture> pictures = new ArrayList<>();
+    private List<Picture> pictures;
 
     public MainFragment() {
         // Required empty public constructor
@@ -122,11 +125,10 @@ public class MainFragment extends Fragment {
         }
         logStream.format("%Tc %d files found\n", new Date(), fileList.length);
 
-        for (final File file : fileList) {
-            if (file.isFile() && file.getPath().toLowerCase().endsWith(".jpg")) {
-                pictures.add(new Picture(file, getDateTaken(file)));
-            }
-        }
+        pictures = Stream.of(fileList)
+                .filter(file -> file.isFile() && file.getPath().toLowerCase().endsWith(".jpg"))
+                .map(file -> new Picture(file, getDateTaken(file)))
+                .collect(Collectors.toList());
 
         if (pictures.isEmpty()) {
             Log.e(TAG, "No pictures found");
