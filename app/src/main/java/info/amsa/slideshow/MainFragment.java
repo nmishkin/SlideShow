@@ -19,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 import androidx.appcompat.app.ActionBar;
@@ -137,10 +138,7 @@ public class MainFragment extends Fragment {
         screenOn();
 
         return view;
-
-
     }
-
 
     private void goFullScreen() {
         FragmentActivity activity = getActivity();
@@ -173,13 +171,11 @@ public class MainFragment extends Fragment {
     private synchronized void screenOff() {
         Log.d(TAG, "Screen off");
         wakeLock.release();
-        /*
-        getWindow().clearFlags(
+
+        getActivity().getWindow().clearFlags(
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         );
-
-         */
         stopPhotoLoader();
         runAtNextHourMinute(6, 30, this::screenOn);
     }
