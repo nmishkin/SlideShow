@@ -19,32 +19,31 @@ class PictureHistoryDb extends SQLiteOpenHelper {
                     COL_LAST_DISPLAYED + " INTEGER"
             + ")";
 
-    PictureHistoryDb(Context context) {
+    PictureHistoryDb(final Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
     @Override
-    public void onCreate(SQLiteDatabase db) {
+    public void onCreate(final SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_ENTRIES);
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    public void onUpgrade(final SQLiteDatabase db, final int oldVersion, final int newVersion) {
 
     }
 
-    void insertPicture(MainFragment.Picture picture) {
-        ContentValues values = new ContentValues();
+    void insertPicture(final MainFragment.Picture picture) {
+        final ContentValues values = new ContentValues();
         values.put(COL_PATH_NAME, picture.file.getName());
         values.put(COL_LAST_DISPLAYED, System.currentTimeMillis());
         getWritableDatabase().insert(TABLE_NAME, null, values);
     }
 
-    public long lookupPicture(MainFragment.Picture picture) {
-        try (Cursor cursor = getReadableDatabase().query(TABLE_NAME,
+    public long lookupPicture(final MainFragment.Picture picture) {
+        try (final Cursor cursor = getReadableDatabase().query(TABLE_NAME,
                 new String[]{COL_LAST_DISPLAYED}, COL_PATH_NAME + "= ?",
                 new String[]{picture.file.getName()},
                 null, null, null)) {
-            ;
             return cursor.moveToNext() ? cursor.getLong(0) : 0;
         }
     }

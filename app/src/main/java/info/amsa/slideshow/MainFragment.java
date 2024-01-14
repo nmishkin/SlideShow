@@ -52,7 +52,7 @@ public class MainFragment extends Fragment {
     private PrintStream logStream;
 
     public static class Picture {
-        Picture(File file, Instant dateTaken) {
+        Picture(final File file, final Instant dateTaken) {
             this.file = file;
             this.dateTaken = dateTaken;
         }
@@ -72,27 +72,27 @@ public class MainFragment extends Fragment {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+                             final Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.fragment_main, container, false);
+        final View view = inflater.inflate(R.layout.fragment_main, container, false);
 
-        Context context = requireContext();
+        final Context context = requireContext();
         try {
-            FileOutputStream logFile = context.openFileOutput(TAG + ".log", MODE_APPEND);
+            final FileOutputStream logFile = context.openFileOutput(TAG + ".log", MODE_APPEND);
             logStream = new PrintStream(logFile);
-        } catch (FileNotFoundException e) {
+        } catch (final FileNotFoundException e) {
             throw new RuntimeException("Can't open log file", e);
         }
 
         logStream.format("%Tc Application starting\n", new Date());
 
-        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        final PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
                 PowerManager.FULL_WAKE_LOCK |
                         PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG + ":lock");
@@ -101,7 +101,7 @@ public class MainFragment extends Fragment {
         goFullScreen();
 
         imageView.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
+            public void onClick(final View v) {
                 goFullScreen();
                 stopPhotoLoader();
                 startPhotoLoader(false);
@@ -141,9 +141,9 @@ public class MainFragment extends Fragment {
     }
 
     private void goFullScreen() {
-        FragmentActivity activity = getActivity();
+        final FragmentActivity activity = getActivity();
         activity.getWindow().getInsetsController().hide(WindowInsets.Type.systemBars());
-        ActionBar actionBar = ((AppCompatActivity) activity).getSupportActionBar();
+        final ActionBar actionBar = ((AppCompatActivity) activity).getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();
         }
@@ -159,7 +159,7 @@ public class MainFragment extends Fragment {
         runAtNextHourMinute(23, 30, this::screenOff);
     }
 
-    private synchronized void startPhotoLoader(boolean pauseFirst) {
+    private synchronized void startPhotoLoader(final boolean pauseFirst) {
         photoLoaderTask = new PhotoLoaderTask().execute(pauseFirst);
     }
 
@@ -180,7 +180,7 @@ public class MainFragment extends Fragment {
         runAtNextHourMinute(6, 30, this::screenOn);
     }
 
-    private void runAtNextHourMinute(int hour, int minute, Runnable runnable) {
+    private void runAtNextHourMinute(final int hour, final int minute, final Runnable runnable) {
         final ZonedDateTime now = ZonedDateTime.now(SYSTEM_TZ);
         final ZonedDateTime targetTime = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0);
         final ZonedDateTime adjTargetTime = now.isAfter(targetTime) ? targetTime.plusDays(1) : targetTime;
@@ -190,14 +190,14 @@ public class MainFragment extends Fragment {
 
     private class PhotoLoaderTask extends AsyncTask<Boolean, Void, Bitmap> {
         @Override
-        protected Bitmap doInBackground(Boolean... params) {
+        protected Bitmap doInBackground(final Boolean... params) {
             assert params.length == 1;
             final boolean pauseFirst = params[0];
 
             if (pauseFirst) {
                 try {
                     Thread.sleep(TimeUnit.DAYS.toMillis(1));
-                } catch (InterruptedException e) {
+                } catch (final InterruptedException e) {
                     return null;
                 }
             }
@@ -220,28 +220,28 @@ public class MainFragment extends Fragment {
             logStream.format("%Tc Showing %s\n", new Date(), picturePath);
             dbh.insertPicture(picture);
 
-            Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
-            ZonedDateTime zonedDateTaken = picture.dateTaken.atZone(SYSTEM_TZ);
+            final Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
+            final ZonedDateTime zonedDateTaken = picture.dateTaken.atZone(SYSTEM_TZ);
             return addTextToBitmap(bitmap, String.valueOf(zonedDateTaken.getYear()));
         }
 
-        private Bitmap addTextToBitmap(Bitmap bitmap, String textToAdd) {
+        private Bitmap addTextToBitmap(final Bitmap bitmap, final String textToAdd) {
             // Create a mutable copy of the original bitmap
-            Bitmap bitmapWithText = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+            final Bitmap bitmapWithText = bitmap.copy(Bitmap.Config.ARGB_8888, true);
 
             // Create a canvas to draw on the bitmap
-            Canvas canvas = new Canvas(bitmapWithText);
+            final Canvas canvas = new Canvas(bitmapWithText);
 
             // Create a Paint object for styling the text
-            Paint paint = new Paint();
+            final Paint paint = new Paint();
             paint.setColor(Color.RED);  // Set the text color
             paint.setTextSize(20);      // Set the text size
             paint.setAntiAlias(true);   // Enable anti-aliasing for smoother text
             paint.setFakeBoldText(true);
 
             // Calculate the position to center the text on the bitmap
-            float x = bitmapWithText.getWidth() - paint.measureText(textToAdd) - 10;
-            float y = bitmapWithText.getHeight() - paint.getTextSize() + 15;
+            final float x = bitmapWithText.getWidth() - paint.measureText(textToAdd) - 10;
+            final float y = bitmapWithText.getHeight() - paint.getTextSize() + 15;
 
             // Draw the text on the bitmap
             canvas.drawText(textToAdd, x, y, paint);
@@ -250,7 +250,7 @@ public class MainFragment extends Fragment {
         }
 
         @Override
-        protected void onPostExecute(Bitmap bitmap) {
+        protected void onPostExecute(final Bitmap bitmap) {
             if (bitmap != null) {
                 imageView.setBackgroundColor(Color.BLACK);
                 imageView.setImageBitmap(bitmap);
@@ -259,16 +259,16 @@ public class MainFragment extends Fragment {
         }
     }
 
-    private boolean displayedRecently(Picture picture) {
-        long t = dbh.lookupPicture(picture);
+    private boolean displayedRecently(final Picture picture) {
+        final long t = dbh.lookupPicture(picture);
         return System.currentTimeMillis() - t < TimeUnit.DAYS.toMillis(180);
     }
 
-    private Instant getDateTaken(File imageFile) {
+    private Instant getDateTaken(final File imageFile) {
         final ExifInterface exif;
         try {
             exif = new ExifInterface(imageFile.getAbsolutePath());
-        } catch (IOException e) {
+        } catch (final IOException e) {
             Log.i(TAG, "Exception while getting EXIF time", e);
             return EPOCH;
         }
@@ -278,16 +278,16 @@ public class MainFragment extends Fragment {
         if (dateString == null) {
             return EPOCH;
         }
-        Date date;
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+        final Date date;
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
         try {
             date = dateFormat.parse(dateString);
-        } catch (ParseException e) {
+        } catch (final ParseException e) {
             return EPOCH;
         }
         return date.toInstant();
     }
-    private boolean oldEnough(Picture picture) {
+    private boolean oldEnough(final Picture picture) {
         return Duration.between(Instant.now(), picture.dateTaken).toDays() > 365;
     }
 }
