@@ -32,6 +32,12 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -95,6 +101,33 @@ public class MainFragment extends Fragment {
         // Required empty public constructor
     }
 
+
+    public static class LogRecord {
+        private Timestamp timestamp;
+        private String message;
+
+        public LogRecord(String message) {
+            this.setTimestamp(Timestamp.now());
+            this.setMessage(message);
+        }
+
+        public Timestamp getTimestamp() {
+            return timestamp;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setTimestamp(Timestamp timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+    }
+
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -107,6 +140,13 @@ public class MainFragment extends Fragment {
         final View view = inflater.inflate(R.layout.fragment_main, container, false);
 
         final Context context = requireContext();
+
+        FirebaseApp fbApp = FirebaseApp.initializeApp(context);
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        CollectionReference coll = db.collection("log");
+        coll.add(new LogRecord("message " + System.currentTimeMillis()));
+
         try {
             final FileOutputStream logFile = context.openFileOutput(TAG + ".log", MODE_APPEND);
             logStream = new PrintStream(logFile);
