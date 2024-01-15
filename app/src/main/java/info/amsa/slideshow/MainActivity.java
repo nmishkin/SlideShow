@@ -26,7 +26,6 @@ public class MainActivity extends AppCompatActivity {
         setShowWhenLocked(true);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-
         if (savedInstanceState == null) {
             final MainFragment fragment = new MainFragment();
             getSupportFragmentManager()
