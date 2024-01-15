@@ -16,6 +16,9 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -27,6 +30,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentTransaction;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,8 +43,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -54,6 +56,25 @@ public class MainFragment extends Fragment {
     private PictureHistoryDb dbh;
     private PrintStream logStream;
 
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.options_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.options_menu_item_settings:
+                FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                transaction.replace(R.id.activity_main, new SettingsFragment());
+                transaction.addToBackStack(null); // Optional: Adds the transaction to the back stack
+                transaction.commit();
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item); // important line
+    }
     public static class Picture {
         Picture(final File file, final Instant dateTaken) {
             this.file = file;
@@ -103,6 +124,8 @@ public class MainFragment extends Fragment {
         imageView = view.findViewById(R.id.imageView);
         goFullScreen();
 
+        setHasOptionsMenu(true);
+
         imageView.setOnClickListener(v -> {
             goFullScreen();
             stopPhotoLoader();
@@ -145,7 +168,7 @@ public class MainFragment extends Fragment {
         activity.getWindow().getInsetsController().hide(WindowInsets.Type.systemBars());
         final ActionBar actionBar = ((AppCompatActivity) activity).getSupportActionBar();
         if (actionBar != null) {
-            actionBar.hide();
+//            actionBar.hide();
         }
     }
 
