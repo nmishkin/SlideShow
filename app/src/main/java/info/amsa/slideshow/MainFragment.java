@@ -1,6 +1,6 @@
 package info.amsa.slideshow;
 
-import static android.content.Context.MODE_APPEND;
+import static info.amsa.slideshow.MainApplication.TAG;
 import static java.time.Instant.EPOCH;
 
 import android.content.Context;
@@ -32,10 +32,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.File;
@@ -57,7 +54,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MainFragment extends Fragment {
-    private static final String TAG = "SlideShow";
     private static final ZoneId SYSTEM_TZ = ZoneId.systemDefault();
     private PictureHistoryDb dbh;
     private PrintStream logStream;
@@ -101,33 +97,6 @@ public class MainFragment extends Fragment {
         // Required empty public constructor
     }
 
-
-    public static class LogRecord {
-        private Timestamp timestamp;
-        private String message;
-
-        public LogRecord(String message) {
-            this.setTimestamp(Timestamp.now());
-            this.setMessage(message);
-        }
-
-        public Timestamp getTimestamp() {
-            return timestamp;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setTimestamp(Timestamp timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-    }
-
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -141,20 +110,9 @@ public class MainFragment extends Fragment {
 
         final Context context = requireContext();
 
-        FirebaseApp fbApp = FirebaseApp.initializeApp(context);
+        logStream = new Logger(context);
 
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        CollectionReference coll = db.collection("log");
-        coll.add(new LogRecord("message " + System.currentTimeMillis()));
-
-        try {
-            final FileOutputStream logFile = context.openFileOutput(TAG + ".log", MODE_APPEND);
-            logStream = new PrintStream(logFile);
-        } catch (final FileNotFoundException e) {
-            throw new RuntimeException("Can't open log file", e);
-        }
-
-        logStream.format("%Tc Application starting\n", new Date());
+        logStream.format("Application starting\n");
 
         final PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
@@ -184,7 +142,7 @@ public class MainFragment extends Fragment {
             Log.e(TAG, "Can't get list of pictures");
             return view;
         }
-        logStream.format("%Tc %d files found\n", new Date(), fileList.length);
+        logStream.format("%d files found\n", fileList.length);
 
         pictures = Stream.of(fileList)
                 .filter(file -> file.isFile() && file.getPath().toLowerCase().endsWith(".jpg"))
@@ -194,7 +152,7 @@ public class MainFragment extends Fragment {
         if (pictures.isEmpty()) {
             Log.e(TAG, "No pictures found");
         }
-        logStream.format("%Tc %d pictures found\n", new Date(), pictures.size());
+        logStream.format("%d pictures found\n", pictures.size());
 
         dbh = new PictureHistoryDb(context);
 
@@ -276,11 +234,11 @@ public class MainFragment extends Fragment {
                 }
             }
             if (!foundOne) {
-                logStream.format("%Tc Didn't find an acceptable picture, proceeding anyway\n", new Date());
+                logStream.format("Didn't find an acceptable picture, proceeding anyway\n");
             }
 
             final String picturePath = picture.file.getAbsolutePath();
-            logStream.format("%Tc Showing %s\n", new Date(), picturePath);
+            logStream.format("Showing %s\n", picturePath);
             dbh.insertPicture(picture);
 
             final Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
