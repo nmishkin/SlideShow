@@ -14,18 +14,20 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Date;
+import java.util.Map;
 
-public class Logger extends PrintStream {
-
-
+public class Logger {
     private final CollectionReference coll;
+    private final PrintStream logStream;
 
     public static class LogRecord {
         private Timestamp timestamp;
+        private int priority;
         private String message;
 
-        public LogRecord(String message) {
+        public LogRecord(final int priority, String message) {
             this.setTimestamp(Timestamp.now());
+            this.setPriority(priority);
             this.setMessage(message);
         }
 
@@ -35,6 +37,14 @@ public class Logger extends PrintStream {
 
         public String getMessage() {
             return message;
+        }
+
+        public int getPriority() {
+            return priority;
+        }
+
+        public void setPriority(int priority) {
+            this.priority = priority;
         }
 
         public void setTimestamp(Timestamp timestamp) {
@@ -47,18 +57,47 @@ public class Logger extends PrintStream {
     }
     
     Logger(Context context) {
-        super(makeLogFileStream(context));
+        logStream = makeLogFileStream(context);
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
         coll = db.collection("log");
     }
 
-    @Override
-    public PrintStream format(final String format, final Object... args) {
+    public String log(final int priority, final String format, final Object... args) {
         final String message = String.format(format, args);
-        Log.d(TAG, message);
-        super.format("%Tc: %s", new Date(), message);
-        coll.add(new LogRecord(message));
-        return this;
+        Log.println(priority, TAG, message);
+        logStream.format("%Tc: [%s] %s\n", new Date(), priorityToString(priority), message);
+        coll.add(new LogRecord(priority, message));
+        return message;
+    }
+
+    private static final Map<Integer, String> PRIORITY_TO_STRING = Map.of(
+            Log.VERBOSE, "V",
+            Log.DEBUG, "D",
+            Log.INFO, "I",
+            Log.WARN, "W",
+            Log.ERROR, "E",
+            Log.ASSERT, "A"
+    );
+
+    private String priorityToString(int priority) {
+        String s = PRIORITY_TO_STRING.get(priority);
+        return s == null ? "?" : s;
+    }
+
+    public Logger fatal(final String format, final Object... args) {
+        throw new RuntimeException(log(Log.ERROR, format, args));
+    }
+
+    public void warn(final String format, final Object... args) {
+        log(Log.WARN, format, args);
+    }
+
+    public void info(final String format, final Object... args) {
+        log(Log.INFO, format, args);
+    }
+
+    public void debug(final String format, final Object... args) {
+        log(Log.DEBUG, format, args);
     }
 
     private static PrintStream makeLogFileStream(Context context) {

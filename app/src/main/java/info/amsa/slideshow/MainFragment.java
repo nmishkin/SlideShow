@@ -1,7 +1,7 @@
 package info.amsa.slideshow;
 
-import static info.amsa.slideshow.MainApplication.TAG;
 import static java.time.Instant.EPOCH;
+import static info.amsa.slideshow.MainApplication.TAG;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -32,14 +32,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.FirebaseFirestore;
-
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -55,9 +49,8 @@ import java.util.stream.Stream;
 
 public class MainFragment extends Fragment {
     private static final ZoneId SYSTEM_TZ = ZoneId.systemDefault();
-    private PictureHistoryDb dbh;
-    private PrintStream logStream;
-
+    private PictureHistoryDb pictureHistoryDb;
+    private Logger logger;
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -110,9 +103,9 @@ public class MainFragment extends Fragment {
 
         final Context context = requireContext();
 
-        logStream = new Logger(context);
+        logger = new Logger(context);
 
-        logStream.format("Application starting\n");
+        logger.debug("Application starting");
 
         final PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
@@ -130,35 +123,38 @@ public class MainFragment extends Fragment {
             startPhotoLoader(false);
         });
 
+        pictures = loadPictures();
+
+        pictureHistoryDb = new PictureHistoryDb(context);
+
+        screenOn();
+
+        return view;
+    }
+
+    private List<Picture> loadPictures() {
         final File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         final File filesDir = new File(picturesDir, "Slide Show");
         if (!filesDir.exists()) {
-            Log.e(TAG, "Can't find Slide Show picture directory: " + filesDir);
-            return view;
+            logger.fatal("Can't find Slide Show picture directory: %s", filesDir);
         }
 
         final File[] fileList = filesDir.listFiles();
         if (fileList == null) {
-            Log.e(TAG, "Can't get list of pictures");
-            return view;
+            logger.fatal("Can't get list of pictures");
         }
-        logStream.format("%d files found\n", fileList.length);
+        logger.info("%d files found", fileList.length);
 
-        pictures = Stream.of(fileList)
+        final List<Picture> pictures = Stream.of(fileList)
                 .filter(file -> file.isFile() && file.getPath().toLowerCase().endsWith(".jpg"))
                 .map(file -> new Picture(file, getDateTaken(file)))
                 .collect(Collectors.toList());
 
         if (pictures.isEmpty()) {
-            Log.e(TAG, "No pictures found");
+            logger.fatal("No pictures found");
         }
-        logStream.format("%d pictures found\n", pictures.size());
-
-        dbh = new PictureHistoryDb(context);
-
-        screenOn();
-
-        return view;
+        logger.info("%d pictures found", pictures.size());
+        return pictures;
     }
 
     private void goFullScreen() {
@@ -171,7 +167,7 @@ public class MainFragment extends Fragment {
     }
 
     private synchronized void screenOn() {
-        Log.d(TAG, "Screen on");
+        logger.debug("Screen on");
         assert photoLoaderTask == null;
 
         wakeLock.acquire();
@@ -234,12 +230,12 @@ public class MainFragment extends Fragment {
                 }
             }
             if (!foundOne) {
-                logStream.format("Didn't find an acceptable picture, proceeding anyway\n");
+                logger.warn("Didn't find an acceptable picture, proceeding anyway");
             }
 
             final String picturePath = picture.file.getAbsolutePath();
-            logStream.format("Showing %s\n", picturePath);
-            dbh.insertPicture(picture);
+            logger.info("Showing %s", picturePath);
+            pictureHistoryDb.insertPicture(picture);
 
             final Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
             final ZonedDateTime zonedDateTaken = picture.dateTaken.atZone(SYSTEM_TZ);
@@ -281,7 +277,7 @@ public class MainFragment extends Fragment {
     }
 
     private boolean displayedRecently(final Picture picture) {
-        final long t = dbh.lookupPicture(picture);
+        final long t = pictureHistoryDb.lookupPicture(picture);
         return System.currentTimeMillis() - t < TimeUnit.DAYS.toMillis(180);
     }
 
