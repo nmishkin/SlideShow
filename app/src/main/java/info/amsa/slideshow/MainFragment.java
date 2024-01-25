@@ -278,7 +278,7 @@ public class MainFragment extends Fragment {
 
     private boolean displayedRecently(final Picture picture) {
         final long t = pictureHistoryDb.lookupPicture(picture);
-        return System.currentTimeMillis() - t < TimeUnit.DAYS.toMillis(180);
+        return t != 0 && System.currentTimeMillis() - t < TimeUnit.DAYS.toMillis(180);
     }
 
     private Instant getDateTaken(final File imageFile) {
@@ -304,7 +304,8 @@ public class MainFragment extends Fragment {
         }
         return date.toInstant();
     }
+
     private boolean oldEnough(final Picture picture) {
-        return Duration.between(Instant.now(), picture.dateTaken).toDays() > 365;
+        return Duration.between(picture.dateTaken, Instant.now()).toDays() > 365;
     }
 }
