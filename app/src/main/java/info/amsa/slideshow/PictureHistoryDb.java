@@ -36,14 +36,18 @@ class PictureHistoryDb extends SQLiteOpenHelper {
         final ContentValues values = new ContentValues();
         values.put(COL_PATH_NAME, picture.file.getName());
         values.put(COL_LAST_DISPLAYED, System.currentTimeMillis());
-        getWritableDatabase().insert(TABLE_NAME, null, values);
+        try (final SQLiteDatabase db = getWritableDatabase()) {
+            db.insertWithOnConflict(TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+        }
     }
 
     public long lookupPicture(final MainFragment.Picture picture) {
-        try (final Cursor cursor = getReadableDatabase().query(TABLE_NAME,
+        try (final SQLiteDatabase readableDatabase = getReadableDatabase();
+             final Cursor cursor = readableDatabase.query(TABLE_NAME,
                 new String[]{COL_LAST_DISPLAYED}, COL_PATH_NAME + "= ?",
                 new String[]{picture.file.getName()},
-                null, null, null)) {
+                null, null, null))
+        {
             return cursor.moveToNext() ? cursor.getLong(0) : 0;
         }
     }
