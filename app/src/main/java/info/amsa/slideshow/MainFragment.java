@@ -59,14 +59,14 @@ public class MainFragment extends Fragment {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.options_menu_item_settings:
-                FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-                transaction.replace(R.id.activity_main, new SettingsFragment());
-                transaction.addToBackStack(null); // Optional: Adds the transaction to the back stack
-                transaction.commit();
-                return true;
-        }
+//        switch (item.getItemId()) {
+//            case R.id.options_menu_item_settings:
+//                FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+//                transaction.replace(R.id.activity_main, new SettingsFragment());
+//                transaction.addToBackStack(null); // Optional: Adds the transaction to the back stack
+//                transaction.commit();
+//                return true;
+//        }
 
         return super.onOptionsItemSelected(item); // important line
     }
