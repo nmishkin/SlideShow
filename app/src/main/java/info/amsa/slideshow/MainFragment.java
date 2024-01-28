@@ -30,13 +30,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentTransaction;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -306,6 +304,7 @@ public class MainFragment extends Fragment {
     }
 
     private boolean oldEnough(final Picture picture) {
-        return Duration.between(picture.dateTaken, Instant.now()).toDays() > 365;
+        return true;
+        // return Duration.between(picture.dateTaken, Instant.now()).toDays() > 365;
     }
 }
