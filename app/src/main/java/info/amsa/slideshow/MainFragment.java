@@ -13,6 +13,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -79,7 +80,7 @@ public class MainFragment extends Fragment {
 
     private ImageView imageView;
     private final Random random = new Random();
-    private final Handler handler = new Handler();
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private AsyncTask<Boolean, Void, Bitmap> photoLoaderTask = null;
     private PowerManager.WakeLock wakeLock;
     private List<Picture> pictures;
@@ -200,6 +201,7 @@ public class MainFragment extends Fragment {
         final ZonedDateTime targetTime = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0);
         final ZonedDateTime adjTargetTime = now.isAfter(targetTime) ? targetTime.plusDays(1) : targetTime;
         final long postTime = adjTargetTime.toInstant().toEpochMilli();
+        logger.debug("Setting runnable to run at %s", adjTargetTime);
         handler.postAtTime(runnable, postTime);
     }
 
