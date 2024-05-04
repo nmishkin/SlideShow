@@ -4,6 +4,7 @@ import static java.time.Instant.EPOCH;
 import static info.amsa.slideshow.MainApplication.TAG;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -104,7 +105,13 @@ public class MainFragment extends Fragment {
 
         logger = new Logger(context);
 
-        logger.debug("Application starting");
+        String versionName;
+        try {
+            versionName = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            versionName = "Unknown";
+        }
+        logger.debug("Application starting: %s", versionName);
 
         final PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(
