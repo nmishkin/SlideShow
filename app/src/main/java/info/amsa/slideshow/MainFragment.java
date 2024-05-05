@@ -17,6 +17,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -204,12 +205,17 @@ public class MainFragment extends Fragment {
     }
 
     private void runAtNextHourMinute(final int hour, final int minute, final Runnable runnable) {
+        Pair<ZonedDateTime, Long> r = getNextHourMinute(hour, minute);
+        logger.debug("Setting runnable to run at %s", r.first);
+        handler.postAtTime(runnable, r.second);
+    }
+
+    private static Pair<ZonedDateTime, Long> getNextHourMinute(int hour, int minute) {
         final ZonedDateTime now = ZonedDateTime.now(SYSTEM_TZ);
         final ZonedDateTime targetTime = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0);
         final ZonedDateTime adjTargetTime = now.isAfter(targetTime) ? targetTime.plusDays(1) : targetTime;
-        final long postTime = adjTargetTime.toInstant().toEpochMilli();
-        logger.debug("Setting runnable to run at %s", adjTargetTime);
-        handler.postAtTime(runnable, postTime);
+        final long adjTargetEpochMillis = adjTargetTime.toInstant().toEpochMilli();
+        return (Pair<ZonedDateTime, Long>) new Pair(adjTargetTime, adjTargetEpochMillis);
     }
 
     private class PhotoLoaderTask extends AsyncTask<Boolean, Void, Bitmap> {
@@ -219,8 +225,11 @@ public class MainFragment extends Fragment {
             final boolean pauseFirst = params[0];
 
             if (pauseFirst) {
+                Pair<ZonedDateTime, Long> r = getNextHourMinute(6, 30);
                 try {
-                    Thread.sleep(TimeUnit.DAYS.toMillis(1));
+                    final long sleepMillis = r.second - System.currentTimeMillis();
+                    logger.debug("Sleeping for %d hours", TimeUnit.MILLISECONDS.toHours(sleepMillis));
+                    Thread.sleep(sleepMillis);
                 } catch (final InterruptedException e) {
                     return null;
                 }
